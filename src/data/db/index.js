@@ -11,5 +11,6 @@ mongoose.connect('mongodb://localhost/teachr', {
   useUnifiedTopology: true,
 });
 
+export { default as Messages } from './schemas/Message';
 export const Users = mongoose.model(UserNamespace, userSchema);
-export const Messages = mongoose.model(MessageNamespace, messageSchema);
+// export const Messages = mongoose.model(MessageNamespace, messageSchema);

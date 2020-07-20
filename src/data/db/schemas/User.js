@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import mongooseUniqueValidator from 'mongoose-unique-validator';
 
 const schema = new mongoose.Schema({
   userName: {
@@ -15,4 +16,12 @@ const schema = new mongoose.Schema({
 });
 
 export const NAMESPACE = 'User';
-export default schema;
+const User = schema.plugin(mongooseUniqueValidator);
+
+const generateUserModel = ({ user }) => ({
+  getAllUsers: User.find({ ...user }),
+});
+
+// export default generateUserModel;
+
+export default User;

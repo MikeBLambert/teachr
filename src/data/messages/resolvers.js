@@ -1,4 +1,11 @@
 import { Messages } from '../db';
+import { PubSub } from 'graphql-subscriptions';
+import { withFilter } from 'apollo-server';
+
+const pubsub = new PubSub();
+
+const MESSAGE_ADDED = 'MESSAGE_ADDED';
+
 const resolvers = {
   Query: {
     getOneMessage: (_, { id }) => {
@@ -9,13 +16,20 @@ const resolvers = {
         });
       });
     },
-    getMessages: (_, { input }) => {
-      return new Promise((resolve, reject) => {
-        Messages.find({ ...input }, (err, messages) => {
-          if (err) reject(err);
-          else resolve(messages);
-        });
-      });
+    messages: async (_, { input: { userA, userB } }) => {
+      try {
+        return await Messages.findConversation({ userA, userB });
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    conversations: async (_, { id }) => {
+      try {
+        return await Messages.findConversations({ id });
+      } catch (error) {
+        console.log(error);
+        return error;
+      }
     },
   },
   Mutation: {
@@ -26,12 +40,12 @@ const resolvers = {
         text,
         timestamp: Date.now(),
       });
-
       return new Promise((resolve, reject) => {
         newMessage.save((err) => {
           if (err) reject(err);
           else {
             console.log('Message saved!');
+            pubsub.publish(MESSAGE_ADDED, { messageAdded: newMessage });
             resolve(newMessage);
           }
         });
@@ -57,6 +71,17 @@ const resolvers = {
           else resolve(`Successfully deleted message ${id}`);
         });
       });
+    },
+  },
+  Subscription: {
+    messageAdded: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(MESSAGE_ADDED),
+        (payload, variables) => {
+          console.log({ payload, variables });
+          return true;
+        },
+      ),
     },
   },
 };
